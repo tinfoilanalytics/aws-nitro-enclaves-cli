@@ -222,16 +222,18 @@ impl<'a> Docker2Eif<'a> {
         let bootstrap_ramfs = format!("{}/bootstrap-initrd.img", self.artifacts_prefix);
         let customer_ramfs = format!("{}/customer-initrd.img", self.artifacts_prefix);
 
+        let linuxkit_args = [
+            "build",
+            "--name",
+            &bootstrap_ramfs,
+            "--format",
+            "kernel+initrd-nogz",
+            "--no-sbom",
+            ramfs_config_file.path().to_str().unwrap(),
+        ];
+        println!("Running {} {:?}", &self.linuxkit_path, linuxkit_args);
         let output = Command::new(&self.linuxkit_path)
-            .args([
-                "build",
-                "--name",
-                &bootstrap_ramfs,
-                "--format",
-                "kernel+initrd-nogz",
-                "--no-sbom",
-                ramfs_config_file.path().to_str().unwrap(),
-            ])
+            .args(linuxkit_args)
             .output()
             .map_err(|_| Docker2EifError::LinuxkitExecError)?;
         if !output.status.success() {
