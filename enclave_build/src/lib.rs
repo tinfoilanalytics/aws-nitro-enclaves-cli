@@ -17,6 +17,7 @@ use docker::DockerUtil;
 use serde_json::json;
 use sha2::Digest;
 use std::collections::BTreeMap;
+use std::io::Read;
 use yaml_generator::YamlGenerator;
 
 pub const DEFAULT_TAG: &str = "1.0";
@@ -196,6 +197,13 @@ impl<'a> Docker2Eif<'a> {
         })
     }
 
+    fn print_file_contents(filename: &str) {
+        let mut file = File::open(filename).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        println!("{} contents: {}", filename, contents);
+    }
+
     pub fn create(&mut self) -> Result<BTreeMap<String, String>, Docker2EifError> {
         let (cmd_file, env_file) = self.docker.load().map_err(|e| {
             eprintln!("Docker error: {e:?}");
@@ -222,11 +230,13 @@ impl<'a> Docker2Eif<'a> {
             eprintln!("Ramfs error: {e:?}");
             Docker2EifError::RamfsError
         })?;
+        Self::print_file_contents(ramfs_config_file.path().to_str().unwrap());
 
         let ramfs_with_rootfs_config_file = yaml_generator.get_customer_ramfs().map_err(|e| {
             eprintln!("Ramfs error: {e:?}");
             Docker2EifError::RamfsError
         })?;
+        Self::print_file_contents(ramfs_config_file.path().to_str().unwrap());
 
         let bootstrap_ramfs = format!("{}/bootstrap-initrd.img", self.artifacts_prefix);
         let customer_ramfs = format!("{}/customer-initrd.img", self.artifacts_prefix);
