@@ -231,7 +231,7 @@ impl<'a> Docker2Eif<'a> {
             "--no-sbom",
             ramfs_config_file.path().to_str().unwrap(),
         ];
-        println!("Running {} {:?}", &self.linuxkit_path, linuxkit_args);
+        println!("Running linuxkit with bootstrap ramfs: {} {:?}", &self.linuxkit_path, linuxkit_args);
         let output = Command::new(&self.linuxkit_path)
             .args(linuxkit_args)
             .output()
@@ -245,17 +245,19 @@ impl<'a> Docker2Eif<'a> {
         }
 
         // Prefix the docker image filesystem, as expected by init
+        let linuxkit_args = [
+            "build",
+            "--docker",
+            "--name",
+            &customer_ramfs,
+            "--format",
+            "kernel+initrd-nogz",
+            "--no-sbom",
+            ramfs_with_rootfs_config_file.path().to_str().unwrap(),
+        ];
+        println!("Running linuxkit with customer ramfs {} {:?}", &self.linuxkit_path, linuxkit_args);
         let output = Command::new(&self.linuxkit_path)
-            .args([
-                "build",
-                "--docker",
-                "--name",
-                &customer_ramfs,
-                "--format",
-                "kernel+initrd-nogz",
-                "--no-sbom",
-                ramfs_with_rootfs_config_file.path().to_str().unwrap(),
-            ])
+            .args(linuxkit_args)
             .output()
             .map_err(|_| Docker2EifError::LinuxkitExecError)?;
         if !output.status.success() {
@@ -283,6 +285,13 @@ impl<'a> Docker2Eif<'a> {
             self.sign_info.clone(),
             sha2::Sha384::new(),
             flags,
+            self.generate_identity_info()?,
+        );
+
+        println!("Building EIF file with kernel: {} cmdline: {} sign_info: {:?} identity_info: {:?}",
+            self.kernel_img_path,
+            self.cmdline.clone(),
+            self.sign_info.clone(),
             self.generate_identity_info()?,
         );
 
