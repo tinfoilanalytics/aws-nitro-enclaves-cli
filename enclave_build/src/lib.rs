@@ -202,6 +202,14 @@ impl<'a> Docker2Eif<'a> {
             Docker2EifError::DockerError
         })?;
 
+        println!("Creating ramfs with docker image: {} init: {} nsm: {} cmd: {} env: {}",
+            self.docker_image,
+            self.init_path,
+            self.nsm_path,
+            cmd_file.path().to_str().unwrap(),
+            env_file.path().to_str().unwrap(),
+        );
+
         let yaml_generator = YamlGenerator::new(
             self.docker_image.clone(),
             self.init_path.clone(),
@@ -214,6 +222,7 @@ impl<'a> Docker2Eif<'a> {
             eprintln!("Ramfs error: {e:?}");
             Docker2EifError::RamfsError
         })?;
+
         let ramfs_with_rootfs_config_file = yaml_generator.get_customer_ramfs().map_err(|e| {
             eprintln!("Ramfs error: {e:?}");
             Docker2EifError::RamfsError
